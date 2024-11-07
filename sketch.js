@@ -10,7 +10,7 @@ var invis = false;
 var isShooting = false;
 var gameOver = false;
 var score = 0;
-var title;
+var title1;
 
 function preload() {
     music1 = loadSound('main.mp4');
