@@ -5,11 +5,10 @@ class Enemy{
             this.health = enemyHealth;
             this.speed = enemySpeed;
             this.attackDamage = enemyAttackDamage;
-            this.x = random(0, 1000);
-            this.y = random(0, 1000);
+            this.x = random(0, canvasS);
+            this.y = random(0, canvasS);
             this.L = 25;
             this.moveable = true;
-            this.alive = true;
     }
     moveToPlayer(Player, moveable){
       if(this.x + this.L >= Player.x && this.x <= Player.r + Player.x && this.y + this.L >= Player.y && this.y <= Player.r + Player.x){

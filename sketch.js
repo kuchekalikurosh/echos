@@ -7,7 +7,6 @@ let music1;
 let shoot1;
 var amountOfE = 5; // Initial number of enemies
 var lastShotTime = 0; // Time since last shot was fired
-var shotDelay = 125; // Minimum delay between shots
 var invis = false; // Invisibility state to prevent constant damage
 var isShooting = false; // Shooting state
 var gameOver = false;
@@ -21,14 +20,16 @@ var selectedWeaponOption;
 var highlightedWeaponOption;
 var highlightedPlayerOption;
 var confirmed = false; // Confirmation state for selections
-
+var laserDamage;
+var laserFireRate; // Minimum delay between shots
+var canvasS = 750;
 function preload() {
     music1 = loadSound('main.mp4');
     shoot1 = loadSound('shoot1.mp3');
 }
 
 function setup() {
-  createCanvas(1000, 1000); // Set canvas size
+  createCanvas(canvasS, canvasS); // Set canvas size
   music1.loop(); // Start background music loop
   // Initialize enemies
   for (var i = 0; i < amountOfE; i++) {
@@ -64,14 +65,15 @@ function gameScreen() {
 
   // Handle enemy and shooting logic
   if (enemies.length > 0) {
-    if (isShooting && millis() - lastShotTime > shotDelay) {
+    if (isShooting && millis() - lastShotTime>laserFireRate) {
       shootLaser();
       lastShotTime = millis();
     }
-    for (var i = 0; i < enemies.length; i++) {
+    for (var i = 0; i < enemies.length; i++){
       if (enemies[i].moveable) {
         enemies[i].moveToPlayer(userPlayer, true);
       }
+      
       enemies[i].show();
       if (checkPlayerEnemyCollision(userPlayer, enemies[i]) && !invis) {
         console.log("Damage: " + enemies[i].attackDamage);
@@ -84,23 +86,7 @@ function gameScreen() {
       }
       // Handle laser collisions and score update
       if (lasers.length > 0) {
-        for (var k = 0; k < lasers.length; k++) {
-          lasers[k].show();
-          lasers[k].move();
-          for (let j = 0; j < enemies.length; j++) {
-            if (checkLaserEnemyCollision(lasers[k], enemies[j])) {
-              console.log("Laser hit enemy!");
-              enemies[j].health -= lasers[k].damage;
-              lasers.splice(k, 1); // Remove laser on hit
-              if (enemies[j].health <= 0) {
-                enemies.splice(j, 1); // Remove enemy on death
-                score += 1;
-              }
-              k--; // Adjust index after removal
-              break;
-            }
-          }
-        }
+        laserHandler();
       }
     }
   }
@@ -109,6 +95,37 @@ function gameScreen() {
     amountOfE += 5;
     for (var t = 0; t < amountOfE; t++) {
       enemies[t] = new Enemy(100, 1 , 5);
+    }
+  }
+}
+
+function laserHandler(){
+  for (var k = 0; k < lasers.length; k++) {
+      lasers[k].show();
+      lasers[k].move();
+      for (let j = 0; j < enemies.length; j++) {
+        if (checkLaserEnemyCollision(lasers[k], enemies[j])) {
+          console.log("Laser hit enemy!");
+          enemies[j].health -= lasers[k].damage;
+        if(selectedWeaponOption != "Sniper"){
+          lasers.splice(k, 1);
+        }  // Remove laser on hit
+        if (enemies[j].health <= 0) {
+          enemies.splice(j, 1); // Remove enemy on death
+          score += 1;
+        }
+        k--; // Adjust index after removal
+        break;
+      }
+    }
+    bulletOutofBounds(lasers);
+  }
+}
+
+function bulletOutofBounds(l){
+  for (var i; i< l.length; i++){
+    if(l[i].x < 0 || l[i].x > canvasS || l[i].y < 0 || l[i].y > canvasS){
+       l.splice(i, 1);
     }
   }
 }
@@ -134,7 +151,7 @@ function shootLaser() {
       p = i;
     }
   }
-  let l = new laser(10, 50, userPlayer.x, userPlayer.y, enemies[p].x + enemies[p].L / 2, enemies[p].y + enemies[p].L / 2);
+  let l = new laser(15, laserDamage, userPlayer.x, userPlayer.y, enemies[p].x + enemies[p].L / 2, enemies[p].y + enemies[p].L / 2);
   lasers.push(l);
   shoot1.play();
 }
@@ -262,7 +279,11 @@ function titleScreen() {
   fill(255); // White text
   textAlign(CENTER, CENTER);
   textSize(50);
-  text("Press J to Start", width / 2, height / 2);
+  text("Echoes of Extinction", width / 2, height / 2);
+  fill(255); // White text
+  textAlign(CENTER, CENTER);
+  textSize(25);
+  text("Press J to Start", width / 2, height / 2 + 50);
 }
 // Player Selection Screen
 function playerSelectionScreen() {
@@ -334,7 +355,6 @@ function drawOption(x, y, title, description, isHighlighted, isSelected){
 }
 
 function confirmPlayerSelection(option) {
-  
   if (!confirmed) {
     selectedPlayerOption = option;
     confirmed = true;
@@ -365,28 +385,40 @@ function checkSelection(cx, cy, cr, rx, ry, rw, rh) {
 
 function handleSelection() {
   if (pSelection && highlightedPlayerOption) {
-    if (!confirmed) {
-            selectedPlayerOption = highlightedPlayerOption;
-            confirmed = true;
-            console.log(selectedPlayerOption + " selected. Press 'j' again to confirm.");
-        } else if (selectedPlayerOption === highlightedPlayerOption) {
-            pSelection = false;
-            wSelection = true;
-            confirmed = false;
-            console.log("Moving to weapon selection.");
-        }
-    } else if (wSelection && highlightedWeaponOption) {
-        if (!confirmed) {
-            selectedWeaponOption = highlightedWeaponOption;
-            confirmed = true;
-            console.log(selectedWeaponOption + " selected. Press 'j' again to confirm.");
-        } else if (selectedWeaponOption === highlightedWeaponOption) {
-            wSelection = false;
-            gameS = true;
-            confirmed = false;
-            console.log("Starting the game.");
-        }
+    if(!confirmed) {
+      selectedPlayerOption = highlightedPlayerOption;
+      confirmed = true;
+      console.log(selectedPlayerOption + " selected. Press 'j' again to confirm.");
+    }else if (selectedPlayerOption == highlightedPlayerOption){
+      pSelection = false;
+      wSelection = true;
+      confirmed = false;
+      console.log("Moving to weapon selection.");
     }
+  }else if (wSelection && highlightedWeaponOption) {
+    
+    if (!confirmed) {
+      selectedWeaponOption = highlightedWeaponOption;
+      confirmed = true;
+      console.log(selectedWeaponOption + " selected. Press 'j' again to confirm.");
+    }else if(selectedWeaponOption== highlightedWeaponOption) {
+      wSelection = false;
+      gameS = true;
+      confirmed = false;
+      console.log("Starting the game.");
+      
+      if(selectedWeaponOption == "Sniper"){
+        laserDamage = 100;
+        laserFireRate = 2000;
+      }else if (selectedWeaponOption){
+        laserDamage = 25;
+        laserFireRate = 125;
+      }else if(selectedWeaponOption == "Sub Machine Gun"){
+        laserDamage = 12.5;
+        laserFireRate = 50;
+      }
+    }
+  }
 }
 
 function resetGame() {
@@ -396,7 +428,7 @@ function resetGame() {
   enemies = [];
   amountOfE = 5;
   for(let i = 0; i < amountOfE; i++) {
-    enemies[i] = new Enemy(100, userPlayer.speed - 4, 5);
+    enemies[i] = new Enemy(100, 1, 5);
   }
   gameOver = false;
   gameS = false;
