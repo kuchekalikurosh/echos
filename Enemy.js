@@ -36,4 +36,3 @@ class Enemy{
       rect(this.x,this.y,this.L, this.L);
     }
 }
-

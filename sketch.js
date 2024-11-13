@@ -1,5 +1,5 @@
 // Define main game variables and load assets
-let userPlayer = new Player(100, 5);
+let userPlayer;
 let c = new Player(100, 5); // Cursor-like object for selection screens
 let enemies = [];
 let lasers = [];
@@ -32,7 +32,7 @@ function setup() {
   music1.loop(); // Start background music loop
   // Initialize enemies
   for (var i = 0; i < amountOfE; i++) {
-    enemies[i] = new Enemy(100, userPlayer.speed - 4, 25);
+    enemies[i] = new Enemy(100, 1, 25);
   }
 }
 
@@ -43,6 +43,7 @@ function draw() {
   } else if (pSelection) {
     playerSelectionScreen();
   } else if (wSelection) {
+    setPlayerOptions();
     weaponSelectionScreen();
   } else if (gameS) {
     gameScreen();
@@ -107,8 +108,18 @@ function gameScreen() {
   if (enemies.length == 0) {
     amountOfE += 5;
     for (var t = 0; t < amountOfE; t++) {
-      enemies[t] = new Enemy(100, userPlayer.speed - 4, 5);
+      enemies[t] = new Enemy(100, 1 , 5);
     }
+  }
+}
+
+function setPlayerOptions(){
+  if(selectedPlayerOption == "Juggernaut"){
+    userPlayer = new Player(300, 2);
+  }else if (selectedPlayerOption == "Speedster"){
+    userPlayer = new Player(80, 10);
+  }else if (selectedPlayerOption == "Default"){
+    userPlayer = new Player(100 , 5);   
   }
 }
 
@@ -191,17 +202,19 @@ function keyPressed() {
   
   // Handle the 'j' key for different game states
   if (key === 'j') {
-    if (title) { // Transition from title to player selection
-      title = false;
-      pSelection = true;
-    } else if (gameOver) { // Reset the game from the game over screen
-      resetGame();
-    } else if (gameS) { // Handle shooting in game screen
-      isShooting = true;
-    } else if (pSelection || wSelection) { // Handle selections in player or weapon selection screens
-      handleSelection();
+        if (title) { // Transition from title to player selection
+            title = false;
+            pSelection = true;
+        } else if (gameOver) { // Reset the game from the game over screen
+            resetGame();
+        } else if (gameS) { // Handle shooting in game screen
+            isShooting = true;
+        } else if (pSelection || wSelection) { // Handle selections in player or weapon selection screens
+            if ((pSelection && highlightedPlayerOption) || (wSelection && highlightedWeaponOption)) {
+                handleSelection();
+            }
+        }
     }
-  }
 }
 
 function keyReleased() {
@@ -258,19 +271,22 @@ function playerSelectionScreen() {
     textAlign(LEFT, CENTER);
 
     // Detect hovering over options based on cursor overlap
+    let previousHighlight = highlightedPlayerOption; // Store previous highlighted option
     highlightedPlayerOption = null;
-    if (checkSelection(c.x, c.y, c.r, 100, 200, 500, 250)) {
+    if (checkSelection(c.x, c.y, c.r, 80, 170, 400, 70)) {
         highlightedPlayerOption = "Juggernaut";
-    } else if (checkSelection(c.x, c.y, c.r, 100, 300, 500, 350)) {
+    } else if (checkSelection(c.x, c.y, c.r, 80, 270, 400, 70)) {
         highlightedPlayerOption = "Speedster";
-    } else if (checkSelection(c.x, c.y, c.r, 100, 400, 500, 450)) {
+    } else if (checkSelection(c.x, c.y, c.r, 80, 370, 400, 70)) {
         highlightedPlayerOption = "Default";
     }
-
+    if (highlightedPlayerOption !== previousHighlight) {
+        confirmed = false;
+    }
     // Draw options with dynamic highlighting
-    drawOption(100, 200, "Juggernaut", "3x health, 2x slower", highlightedPlayerOption === "Juggernaut");
-    drawOption(100, 300, "Speedster", "2x speed, 80% health", highlightedPlayerOption === "Speedster");
-    drawOption(100, 400, "Default", "Default speed and health", highlightedPlayerOption === "Default");
+    drawOption(100, 200, "Juggernaut", "3x health, 2.5x slower", highlightedPlayerOption == "Juggernaut");
+    drawOption(100, 300, "Speedster", "2x speed, 80% health", highlightedPlayerOption == "Speedster");
+    drawOption(100, 400, "Default", "Default speed and health", highlightedPlayerOption == "Default");
 
     c.show(); // Display the cursor
     c.move(c.keyz); // Update cursor position based on input
@@ -282,20 +298,24 @@ function weaponSelectionScreen() {
     textSize(32);
     textAlign(LEFT, CENTER);
 
-    // Detect hovering over options based on cursor overlap
+    let previousHighlight = highlightedWeaponOption; // Store previous highlighted option
     highlightedWeaponOption = null;
-    if (checkSelection(c.x, c.y, c.r, 100, 200, 500, 250)) {
+    if (checkSelection(c.x, c.y, c.r, 80, 170, 400, 70)) {
         highlightedWeaponOption = "Sniper";
-    } else if (checkSelection(c.x, c.y, c.r, 100, 300, 500, 350)) {
+      
+    } else if (checkSelection(c.x, c.y, c.r, 80, 270, 400, 70)) {
         highlightedWeaponOption = "Assault Rifle";
-    } else if (checkSelection(c.x, c.y, c.r, 100, 400, 500, 450)) {
+    } else if (checkSelection(c.x, c.y, c.r, 80, 370, 400, 70)) {
         highlightedWeaponOption = "Sub Machine Gun";
     }
-
+  
+    if (highlightedWeaponOption !== previousHighlight) {
+        confirmed = false;
+    }
     // Draw options with dynamic highlighting
-    drawOption(100, 200, "Sniper", "High damage, slow fire rate", highlightedWeaponOption === "Sniper");
-    drawOption(100, 300, "Assault Rifle", "Default stats", highlightedWeaponOption === "Assault Rifle");
-    drawOption(100, 400, "Sub Machine Gun", "Low damage, fast fire rate", highlightedWeaponOption === "Sub Machine Gun");
+    drawOption(100, 200, "Sniper", "High damage, slow fire rate", highlightedWeaponOption == "Sniper");
+    drawOption(100, 300, "Assault Rifle", "Default stats", highlightedWeaponOption == "Assault Rifle");
+    drawOption(100, 400, "Sub Machine Gun", "Low damage, fast fire rate", highlightedWeaponOption == "Sub Machine Gun");
 
     c.show(); // Display the cursor
     c.move(c.keyz); // Update cursor position based on input
@@ -305,15 +325,16 @@ function drawOption(x, y, title, description, isHighlighted, isSelected){
   if (isHighlighted) fill(100, 200, 100); // Highlight color
     else fill(255); // Default color
 
-    rect(x - 20, y - 30, 400, 50); // Draw rectangle for the option
+    rect(x - 20, y - 30, 400, 70); // Draw rectangle for the option
     fill(0); // Text color
     text(title, x, y); // Draw the title
     textSize(16);
-    text(description, x, y + 20); // Draw the description
+    text(description, x, y + 25); // Draw the description
     textSize(32);
 }
 
 function confirmPlayerSelection(option) {
+  
   if (!confirmed) {
     selectedPlayerOption = option;
     confirmed = true;
@@ -338,38 +359,34 @@ function confirmWeaponSelection(option) {
 }
 
 function checkSelection(cx, cy, cr, rx, ry, rw, rh) {
-    // Check each edge of the rectangle to see if it is within the circle's radius
-    let nearestX = max(rx, min(cx, rx + rw));
-    let nearestY = max(ry, min(cy, ry + rh));
-    let dX = cx - nearestX;
-    let dY = cy - nearestY;
-    return (dX * dX + dY * dY) < (cr * cr);
+    return cx > rx && cx < rx + rw &&
+         cy > ry && cy < ry + rh;
 }
 
 function handleSelection() {
-  if (!confirmed) {
-    if (pSelection && highlightedPlayerOption) {
-      selectedPlayerOption = highlightedPlayerOption;
-      confirmed = true;
-      console.log(selectedPlayerOption + " selected. Press 'j' again to confirm.");
+  if (pSelection && highlightedPlayerOption) {
+    if (!confirmed) {
+            selectedPlayerOption = highlightedPlayerOption;
+            confirmed = true;
+            console.log(selectedPlayerOption + " selected. Press 'j' again to confirm.");
+        } else if (selectedPlayerOption === highlightedPlayerOption) {
+            pSelection = false;
+            wSelection = true;
+            confirmed = false;
+            console.log("Moving to weapon selection.");
+        }
     } else if (wSelection && highlightedWeaponOption) {
-      selectedWeaponOption = highlightedWeaponOption;
-      confirmed = true;
-      console.log(selectedWeaponOption + " selected. Press 'j' again to confirm.");
+        if (!confirmed) {
+            selectedWeaponOption = highlightedWeaponOption;
+            confirmed = true;
+            console.log(selectedWeaponOption + " selected. Press 'j' again to confirm.");
+        } else if (selectedWeaponOption === highlightedWeaponOption) {
+            wSelection = false;
+            gameS = true;
+            confirmed = false;
+            console.log("Starting the game.");
+        }
     }
-  } else {
-    if (pSelection) {
-      pSelection = false;
-      wSelection = true;
-      confirmed = false;
-      console.log("Moving to weapon selection.");
-    } else if (wSelection) {
-      wSelection = false;
-      gameS = true;
-      confirmed = false;
-      console.log("Starting the game.");
-    }
-  }
 }
 
 function resetGame() {
