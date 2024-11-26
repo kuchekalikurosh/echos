@@ -443,3 +443,21 @@ function resetGame() {
   selectedWeaponOption = " ";
   selectedPlayerOption = " ";
 }
+
+function addScore(name, score) {
+  if(name.length !== 3) {
+    console.log("Name must be 3 letters!");
+  }
+
+  leaderboard.push({ name: name.toUpperCase(), score });
+
+  leaderboard.sort((a, b) => b.score - a.score);
+
+  if (leaderboard.length > 10) {
+    leaderboard.pop();
+  }
+}
+
+function leaderboardDisplay() {
+  
+}
