@@ -1,10 +1,11 @@
 class Enemy{
   constructor(enemyHealth, enemySpeed, 
-        enemyAttackDamage) {
+        enemyAttackDamage, color) {
     console.log(enemyHealth, enemySpeed, enemyAttackDamage);
             this.health = enemyHealth;
             this.speed = enemySpeed;
             this.attackDamage = enemyAttackDamage;
+            this.color = color;
             this.x = random(0, 1000);
             this.y = random(0, 1000);
             this.L = 25;
@@ -32,7 +33,7 @@ class Enemy{
     }
     show(){
       noStroke()
-      fill('red')
+      fill(color)
       rect(this.x,this.y,this.L, this.L);
     }
 }

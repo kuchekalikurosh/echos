@@ -3,9 +3,11 @@ let userPlayer = new Player(100, 5);
 let c = new Player(100, 5); // Cursor-like object for selection screens
 let enemies = [];
 let lasers = [];
+let leaderboard = []; // Leaderboard array
 let music1;
 let shoot1;
 var amountOfE = 5; // Initial number of enemies
+var round = 1; // Number of total rounds to determine boss spawn
 var lastShotTime = 0; // Time since last shot was fired
 var shotDelay = 125; // Minimum delay between shots
 var invis = false; // Invisibility state to prevent constant damage
@@ -106,6 +108,10 @@ function gameScreen() {
   // Spawn more enemies if all are defeated
   if (enemies.length == 0) {
     amountOfE += 5;
+    round += 1;
+    if (round % 5 == 0) {
+      boss = new Enemy(1000, userPlayer.speed - 0.5, 20);
+    }
     for (var t = 0; t < amountOfE; t++) {
       enemies[t] = new Enemy(100, userPlayer.speed - 4, 5);
     }
@@ -243,6 +249,7 @@ function displayScore(currentS) {
   text("Score: " + currentS, 50, 125);
   textSize(32);
 }
+
 // Title screen function
 function titleScreen() {
   background(0); // Black background
