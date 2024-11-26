@@ -1,5 +1,5 @@
 // Define main game variables and load assets
-let userPlayer = new Player(100, 5);
+let userPlayer;
 let c = new Player(100, 5); // Cursor-like object for selection screens
 let enemies = [];
 let lasers = [];
@@ -9,7 +9,6 @@ let shoot1;
 var amountOfE = 5; // Initial number of enemies
 var round = 1; // Number of total rounds to determine boss spawn
 var lastShotTime = 0; // Time since last shot was fired
-var shotDelay = 125; // Minimum delay between shots
 var invis = false; // Invisibility state to prevent constant damage
 var isShooting = false; // Shooting state
 var gameOver = false;
@@ -23,18 +22,20 @@ var selectedWeaponOption;
 var highlightedWeaponOption;
 var highlightedPlayerOption;
 var confirmed = false; // Confirmation state for selections
-
+var laserDamage;
+var laserFireRate; // Minimum delay between shots
+var canvasS = 750;
 function preload() {
     music1 = loadSound('main.mp4');
     shoot1 = loadSound('shoot1.mp3');
 }
 
 function setup() {
-  createCanvas(1000, 1000); // Set canvas size
+  createCanvas(canvasS, canvasS); // Set canvas size
   music1.loop(); // Start background music loop
   // Initialize enemies
   for (var i = 0; i < amountOfE; i++) {
-    enemies[i] = new Enemy(100, userPlayer.speed - 4, 25);
+    enemies[i] = new Enemy(100, 1, 25);
   }
 }
 
@@ -45,6 +46,7 @@ function draw() {
   } else if (pSelection) {
     playerSelectionScreen();
   } else if (wSelection) {
+    setPlayerOptions();
     weaponSelectionScreen();
   } else if (gameS) {
     gameScreen();
@@ -65,14 +67,15 @@ function gameScreen() {
 
   // Handle enemy and shooting logic
   if (enemies.length > 0) {
-    if (isShooting && millis() - lastShotTime > shotDelay) {
+    if (isShooting && millis() - lastShotTime>laserFireRate) {
       shootLaser();
       lastShotTime = millis();
     }
-    for (var i = 0; i < enemies.length; i++) {
+    for (var i = 0; i < enemies.length; i++){
       if (enemies[i].moveable) {
         enemies[i].moveToPlayer(userPlayer, true);
       }
+      
       enemies[i].show();
       if (checkPlayerEnemyCollision(userPlayer, enemies[i]) && !invis) {
         console.log("Damage: " + enemies[i].attackDamage);
@@ -85,23 +88,7 @@ function gameScreen() {
       }
       // Handle laser collisions and score update
       if (lasers.length > 0) {
-        for (var k = 0; k < lasers.length; k++) {
-          lasers[k].show();
-          lasers[k].move();
-          for (let j = 0; j < enemies.length; j++) {
-            if (checkLaserEnemyCollision(lasers[k], enemies[j])) {
-              console.log("Laser hit enemy!");
-              enemies[j].health -= lasers[k].damage;
-              lasers.splice(k, 1); // Remove laser on hit
-              if (enemies[j].health <= 0) {
-                enemies.splice(j, 1); // Remove enemy on death
-                score += 1;
-              }
-              k--; // Adjust index after removal
-              break;
-            }
-          }
-        }
+        laserHandler();
       }
     }
   }
@@ -113,8 +100,49 @@ function gameScreen() {
       boss = new Enemy(1000, userPlayer.speed - 0.5, 20);
     }
     for (var t = 0; t < amountOfE; t++) {
-      enemies[t] = new Enemy(100, userPlayer.speed - 4, 5);
+      enemies[t] = new Enemy(100, 1 , 5);
     }
+  }
+}
+
+function laserHandler(){
+  for (var k = 0; k < lasers.length; k++) {
+      lasers[k].show();
+      lasers[k].move();
+      for (let j = 0; j < enemies.length; j++) {
+        if (checkLaserEnemyCollision(lasers[k], enemies[j])) {
+          console.log("Laser hit enemy!");
+          enemies[j].health -= lasers[k].damage;
+        if(selectedWeaponOption != "Sniper"){
+          lasers.splice(k, 1);
+        }  // Remove laser on hit
+        if (enemies[j].health <= 0) {
+          enemies.splice(j, 1); // Remove enemy on death
+          score += 1;
+        }
+        k--; // Adjust index after removal
+        break;
+      }
+    }
+    bulletOutofBounds(lasers);
+  }
+}
+
+function bulletOutofBounds(l){
+  for (var i; i< l.length; i++){
+    if(l[i].x < 0 || l[i].x > canvasS || l[i].y < 0 || l[i].y > canvasS){
+       l.splice(i, 1);
+    }
+  }
+}
+
+function setPlayerOptions(){
+  if(selectedPlayerOption == "Juggernaut"){
+    userPlayer = new Player(300, 2);
+  }else if (selectedPlayerOption == "Speedster"){
+    userPlayer = new Player(80, 10);
+  }else if (selectedPlayerOption == "Default"){
+    userPlayer = new Player(100 , 5);   
   }
 }
 
@@ -129,7 +157,7 @@ function shootLaser() {
       p = i;
     }
   }
-  let l = new laser(10, 50, userPlayer.x, userPlayer.y, enemies[p].x + enemies[p].L / 2, enemies[p].y + enemies[p].L / 2);
+  let l = new laser(15, laserDamage, userPlayer.x, userPlayer.y, enemies[p].x + enemies[p].L / 2, enemies[p].y + enemies[p].L / 2);
   lasers.push(l);
   shoot1.play();
 }
@@ -197,17 +225,19 @@ function keyPressed() {
   
   // Handle the 'j' key for different game states
   if (key === 'j') {
-    if (title) { // Transition from title to player selection
-      title = false;
-      pSelection = true;
-    } else if (gameOver) { // Reset the game from the game over screen
-      resetGame();
-    } else if (gameS) { // Handle shooting in game screen
-      isShooting = true;
-    } else if (pSelection || wSelection) { // Handle selections in player or weapon selection screens
-      handleSelection();
+        if (title) { // Transition from title to player selection
+            title = false;
+            pSelection = true;
+        } else if (gameOver) { // Reset the game from the game over screen
+            resetGame();
+        } else if (gameS) { // Handle shooting in game screen
+            isShooting = true;
+        } else if (pSelection || wSelection) { // Handle selections in player or weapon selection screens
+            if ((pSelection && highlightedPlayerOption) || (wSelection && highlightedWeaponOption)) {
+                handleSelection();
+            }
+        }
     }
-  }
 }
 
 function keyReleased() {
@@ -256,7 +286,11 @@ function titleScreen() {
   fill(255); // White text
   textAlign(CENTER, CENTER);
   textSize(50);
-  text("Press J to Start", width / 2, height / 2);
+  text("Echoes of Extinction", width / 2, height / 2);
+  fill(255); // White text
+  textAlign(CENTER, CENTER);
+  textSize(25);
+  text("Press J to Start", width / 2, height / 2 + 50);
 }
 // Player Selection Screen
 function playerSelectionScreen() {
@@ -265,19 +299,22 @@ function playerSelectionScreen() {
     textAlign(LEFT, CENTER);
 
     // Detect hovering over options based on cursor overlap
+    let previousHighlight = highlightedPlayerOption; // Store previous highlighted option
     highlightedPlayerOption = null;
-    if (checkSelection(c.x, c.y, c.r, 100, 200, 500, 250)) {
+    if (checkSelection(c.x, c.y, c.r, 80, 170, 400, 70)) {
         highlightedPlayerOption = "Juggernaut";
-    } else if (checkSelection(c.x, c.y, c.r, 100, 300, 500, 350)) {
+    } else if (checkSelection(c.x, c.y, c.r, 80, 270, 400, 70)) {
         highlightedPlayerOption = "Speedster";
-    } else if (checkSelection(c.x, c.y, c.r, 100, 400, 500, 450)) {
+    } else if (checkSelection(c.x, c.y, c.r, 80, 370, 400, 70)) {
         highlightedPlayerOption = "Default";
     }
-
+    if (highlightedPlayerOption !== previousHighlight) {
+        confirmed = false;
+    }
     // Draw options with dynamic highlighting
-    drawOption(100, 200, "Juggernaut", "3x health, 2x slower", highlightedPlayerOption === "Juggernaut");
-    drawOption(100, 300, "Speedster", "2x speed, 80% health", highlightedPlayerOption === "Speedster");
-    drawOption(100, 400, "Default", "Default speed and health", highlightedPlayerOption === "Default");
+    drawOption(100, 200, "Juggernaut", "3x health, 2.5x slower", highlightedPlayerOption == "Juggernaut");
+    drawOption(100, 300, "Speedster", "2x speed, 80% health", highlightedPlayerOption == "Speedster");
+    drawOption(100, 400, "Default", "Default speed and health", highlightedPlayerOption == "Default");
 
     c.show(); // Display the cursor
     c.move(c.keyz); // Update cursor position based on input
@@ -289,20 +326,24 @@ function weaponSelectionScreen() {
     textSize(32);
     textAlign(LEFT, CENTER);
 
-    // Detect hovering over options based on cursor overlap
+    let previousHighlight = highlightedWeaponOption; // Store previous highlighted option
     highlightedWeaponOption = null;
-    if (checkSelection(c.x, c.y, c.r, 100, 200, 500, 250)) {
+    if (checkSelection(c.x, c.y, c.r, 80, 170, 400, 70)) {
         highlightedWeaponOption = "Sniper";
-    } else if (checkSelection(c.x, c.y, c.r, 100, 300, 500, 350)) {
+      
+    } else if (checkSelection(c.x, c.y, c.r, 80, 270, 400, 70)) {
         highlightedWeaponOption = "Assault Rifle";
-    } else if (checkSelection(c.x, c.y, c.r, 100, 400, 500, 450)) {
+    } else if (checkSelection(c.x, c.y, c.r, 80, 370, 400, 70)) {
         highlightedWeaponOption = "Sub Machine Gun";
     }
-
+  
+    if (highlightedWeaponOption !== previousHighlight) {
+        confirmed = false;
+    }
     // Draw options with dynamic highlighting
-    drawOption(100, 200, "Sniper", "High damage, slow fire rate", highlightedWeaponOption === "Sniper");
-    drawOption(100, 300, "Assault Rifle", "Default stats", highlightedWeaponOption === "Assault Rifle");
-    drawOption(100, 400, "Sub Machine Gun", "Low damage, fast fire rate", highlightedWeaponOption === "Sub Machine Gun");
+    drawOption(100, 200, "Sniper", "High damage, slow fire rate", highlightedWeaponOption == "Sniper");
+    drawOption(100, 300, "Assault Rifle", "Default stats", highlightedWeaponOption == "Assault Rifle");
+    drawOption(100, 400, "Sub Machine Gun", "Low damage, fast fire rate", highlightedWeaponOption == "Sub Machine Gun");
 
     c.show(); // Display the cursor
     c.move(c.keyz); // Update cursor position based on input
@@ -312,11 +353,11 @@ function drawOption(x, y, title, description, isHighlighted, isSelected){
   if (isHighlighted) fill(100, 200, 100); // Highlight color
     else fill(255); // Default color
 
-    rect(x - 20, y - 30, 400, 50); // Draw rectangle for the option
+    rect(x - 20, y - 30, 400, 70); // Draw rectangle for the option
     fill(0); // Text color
     text(title, x, y); // Draw the title
     textSize(16);
-    text(description, x, y + 20); // Draw the description
+    text(description, x, y + 25); // Draw the description
     textSize(32);
 }
 
@@ -345,36 +386,44 @@ function confirmWeaponSelection(option) {
 }
 
 function checkSelection(cx, cy, cr, rx, ry, rw, rh) {
-    // Check each edge of the rectangle to see if it is within the circle's radius
-    let nearestX = max(rx, min(cx, rx + rw));
-    let nearestY = max(ry, min(cy, ry + rh));
-    let dX = cx - nearestX;
-    let dY = cy - nearestY;
-    return (dX * dX + dY * dY) < (cr * cr);
+    return cx > rx && cx < rx + rw &&
+         cy > ry && cy < ry + rh;
 }
 
 function handleSelection() {
-  if (!confirmed) {
-    if (pSelection && highlightedPlayerOption) {
+  if (pSelection && highlightedPlayerOption) {
+    if(!confirmed) {
       selectedPlayerOption = highlightedPlayerOption;
       confirmed = true;
       console.log(selectedPlayerOption + " selected. Press 'j' again to confirm.");
-    } else if (wSelection && highlightedWeaponOption) {
-      selectedWeaponOption = highlightedWeaponOption;
-      confirmed = true;
-      console.log(selectedWeaponOption + " selected. Press 'j' again to confirm.");
-    }
-  } else {
-    if (pSelection) {
+    }else if (selectedPlayerOption == highlightedPlayerOption){
       pSelection = false;
       wSelection = true;
       confirmed = false;
       console.log("Moving to weapon selection.");
-    } else if (wSelection) {
+    }
+  }else if (wSelection && highlightedWeaponOption) {
+    
+    if (!confirmed) {
+      selectedWeaponOption = highlightedWeaponOption;
+      confirmed = true;
+      console.log(selectedWeaponOption + " selected. Press 'j' again to confirm.");
+    }else if(selectedWeaponOption== highlightedWeaponOption) {
       wSelection = false;
       gameS = true;
       confirmed = false;
       console.log("Starting the game.");
+      
+      if(selectedWeaponOption == "Sniper"){
+        laserDamage = 100;
+        laserFireRate = 2000;
+      }else if (selectedWeaponOption){
+        laserDamage = 25;
+        laserFireRate = 125;
+      }else if(selectedWeaponOption == "Sub Machine Gun"){
+        laserDamage = 12.5;
+        laserFireRate = 50;
+      }
     }
   }
 }
@@ -386,7 +435,7 @@ function resetGame() {
   enemies = [];
   amountOfE = 5;
   for(let i = 0; i < amountOfE; i++) {
-    enemies[i] = new Enemy(100, userPlayer.speed - 4, 5);
+    enemies[i] = new Enemy(100, 1, 5);
   }
   gameOver = false;
   gameS = false;

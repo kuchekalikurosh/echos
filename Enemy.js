@@ -10,7 +10,6 @@ class Enemy{
             this.y = random(0, 1000);
             this.L = 25;
             this.moveable = true;
-            this.alive = true;
     }
     moveToPlayer(Player, moveable){
       if(this.x + this.L >= Player.x && this.x <= Player.r + Player.x && this.y + this.L >= Player.y && this.y <= Player.r + Player.x){
@@ -37,4 +36,3 @@ class Enemy{
       rect(this.x,this.y,this.L, this.L);
     }
 }
-
