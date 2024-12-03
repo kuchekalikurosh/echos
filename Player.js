@@ -18,14 +18,14 @@ class Player{
           }
         }
         if(keyzz[1]) {
-          if(this.y < 1000){
+          if(this.y < 750){
             this.y += this.speed;
           }else{
             this.y -= this.speed * 2;
           }
         }
         if(keyzz[2]) {
-          if(this.x < 1000){
+          if(this.x < 750){
             this.x += this.speed;
           }else {
             this.x -= this.speed * 2;

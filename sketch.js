@@ -7,7 +7,7 @@ let leaderboard = []; // Leaderboard array
 let music1;
 let shoot1;
 var amountOfE = 5; // Initial number of enemies
-var round = 1; // Number of total rounds to determine boss spawn
+var rounds = 1; // Number of total rounds to determine boss spawn
 var lastShotTime = 0; // Time since last shot was fired
 var invis = false; // Invisibility state to prevent constant damage
 var isShooting = false; // Shooting state
@@ -17,6 +17,7 @@ var title = true; // Title screen state
 var pSelection = false; // Player selection state
 var wSelection = false; // Weapon selection state
 var gameS = false; // Game screen state
+var lScreen = false;
 var selectedPlayerOption;
 var selectedWeaponOption;
 var highlightedWeaponOption;
@@ -35,8 +36,10 @@ function setup() {
   music1.loop(); // Start background music loop
   // Initialize enemies
   for (var i = 0; i < amountOfE; i++) {
-    enemies[i] = new Enemy(100, 1, 25);
+    enemies[i] = new Enemy(100, 1, 5, 25);
   }
+
+  leaderboard = [100, 90, 80, 70, 60];
 }
 
 function draw() {
@@ -50,6 +53,8 @@ function draw() {
     weaponSelectionScreen();
   } else if (gameS) {
     gameScreen();
+  } else if (lScreen) {
+    displayLeaderboardScreen();
   }
 }
 
@@ -95,12 +100,12 @@ function gameScreen() {
   // Spawn more enemies if all are defeated
   if (enemies.length == 0) {
     amountOfE += 5;
-    round += 1;
-    if (round % 5 == 0) {
-      boss = new Enemy(1000, userPlayer.speed - 0.5, 20);
+    rounds += 1;
+    if (rounds % 5 == 0) {
+      boss = new Enemy(1000, userPlayer.speed - 0.5, 20, 50);
     }
     for (var t = 0; t < amountOfE; t++) {
-      enemies[t] = new Enemy(100, 1 , 5);
+      enemies[t] = new Enemy(100, 1 , 5, 25);
     }
   }
 }
@@ -229,6 +234,9 @@ function keyPressed() {
             title = false;
             pSelection = true;
         } else if (gameOver) { // Reset the game from the game over screen
+            gameOver = false;
+          lScreen = true;
+        }else if (lScreen) {
             resetGame();
         } else if (gameS) { // Handle shooting in game screen
             isShooting = true;
@@ -435,8 +443,10 @@ function resetGame() {
   enemies = [];
   amountOfE = 5;
   for(let i = 0; i < amountOfE; i++) {
-    enemies[i] = new Enemy(100, 1, 5);
+    enemies[i] = new Enemy(100, 1, 5, 25);
   }
+  score = 0;
+  lScreen = false;
   gameOver = false;
   gameS = false;
   title = true;
@@ -444,20 +454,26 @@ function resetGame() {
   selectedPlayerOption = " ";
 }
 
-function addScore(name, score) {
-  if(name.length !== 3) {
-    console.log("Name must be 3 letters!");
-  }
-
-  leaderboard.push({ name: name.toUpperCase(), score });
-
-  leaderboard.sort((a, b) => b.score - a.score);
-
-  if (leaderboard.length > 10) {
+function displayLeaderboardScreen() {
+  background(0);
+  fill(255);
+  leaderboard.push(score);
+  leaderboard.sort((a, b) => a - b);
+  if (leaderboard.length > 5) {
     leaderboard.pop();
   }
-}
-
-function leaderboardDisplay() {
-  
+  for (var i = 0; i < leaderboard.length; i++) {
+    if (score == leaderboard[i]) {
+      textSize(18);
+      textAlign(CENTER, CENTER);
+      text("NEW HIGH SCORE!", width / 2, 100);
+      text("SCORE: " + score, width / 2, 175);
+    }
+  }
+  textSize(30);
+  textAlign(CENTER, CENTER);
+    for (var i = 0; i < leaderboard.length; i++) {
+        text(`${i + 1}. ${leaderboard[i]}`, width / 2, 150 + i * 50);
+    }
+  text("Press 'J' to return to title screen", width / 2, 550);
 }
