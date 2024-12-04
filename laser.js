@@ -5,7 +5,6 @@ class laser{
     this.x = x;
     this.y = y;
     this.angle = atan2((y2 - y), (x2 -x));
-    
     this.vx = this.speed * cos(this.angle);
     this.vy = this.speed * sin(this.angle); 
   }

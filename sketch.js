@@ -35,16 +35,15 @@ function preload() {
 
 function setup() {
   createCanvas(canvasS, canvasS); // Set canvas size
-  if (music1.isLoaded()) {
+   if (music1.isLoaded()) {
     music1.loop(); 
   } else {
     music1.onended(() => music1.loop());
   }
-  // Initialize enemies
   for (var i = 0; i < amountOfE; i++) {
     enemies[i] = new Enemy(100, 1, 5, 25, color('red'));
   }
-  leaderboard = [500, 400, 250, 100, 50];
+  leaderboard = [500, 250, 100, 50, 25];
 }
 
 function draw() {
@@ -108,7 +107,7 @@ function gameScreen() {
     }
   }
   // Spawn new enemies if all enemies are defeated
-  if (enemies.length === 0) {
+  if (enemies.length == 0) {
     let baseEnemies = 5; // Base number of enemies
     let growthFactor = 1.25; // Exponential growth factor
     let maxEnemiesPerRound = 100; // Cap on the maximum number of enemies per round
@@ -132,45 +131,49 @@ function gameScreen() {
         )
       );
     }
-    if (rounds % 5 === 0) {
-      enemies.push(
-        new Enemy(
-          1000 + rounds * 50,
-          1.25 + rounds * 0.2,
-          25,
-          50,
-          color("violet")
-        )
-      );
+    if (rounds % 5 == 0) {
+      enemies.push(new Enemy(1000 + rounds * 50, 1.25 + rounds * 0.2,25,50,color("violet")));
       console.log("Boss spawned!");
     }
     spawnPowerUps();
   }
 }
 function spawnPowerUps() {
-  let types = ["speed", "ammo", "health", "damage"];
-  let powerUpCount = 2; // Always spawn 2 power-ups per round
+  let powerUpCount = 2; // Number of power-ups to spawn per round (mutable)
+  const maxPowerUps = 7; // Maximum number of power-ups allowed on the screen
+  const powerUpChances = {
+    ammo: 0.3, 
+    damage: 0.25,  
+    health: 0.3,  
+    speed: 0.15   
+  };
 
-  // Ensure the total number of power-ups does not exceed 7
-  while (powerUps.length < 7 && powerUpCount > 0) {
+  while (powerUps.length < maxPowerUps && powerUpCount > 0) {
+    const randomValue = Math.random();
     let type;
-    if (randomValue < 0.4) {
-      type = "ammo"; 
-    } else if (randomValue < 0.6) {
-      type = "damage"; 
-    } else if(randomValue < 0.9){
-      type =  "health";
+
+    // Determine the type of power-up to spawn
+    if (randomValue < powerUpChances.ammo) {
+      type = "ammo";
+    } else if (randomValue < powerUpChances.ammo + powerUpChances.damage) {
+      type = "damage";
+    } else if (randomValue < powerUpChances.ammo + powerUpChances.damage + powerUpChances.health) {
+      type = "health";
     } else {
       type = "speed";
     }
 
-    let x = random(50, canvasS - 50); // Random position
-    let y = random(50, canvasS - 50);
+    // Spawn the power-up at a random position
+    const x = Math.random() * (canvasS - 100) + 50; // Random x within bounds
+    const y = Math.random() * (canvasS - 100) + 50; // Random y within bounds
 
+    // Push the new power-up into the array
     powerUps.push(new PowerUp(type, x, y));
-    powerUpCount--;
+    powerUpCount--; // Decrease the remaining power-up count
   }
 }
+
+
 function laserHandler() {
   for (let k = 0; k < lasers.length; k++) {
     lasers[k].show();
@@ -178,12 +181,10 @@ function laserHandler() {
     for (let j = 0; j < enemies.length; j++) {
       if (checkLaserEnemyCollision(lasers[k], enemies[j])) {
         enemies[j].health -= lasers[k].damage;
-
         if (selectedWeaponOption !== "Sniper") {
           lasers.splice(k, 1); // Remove laser on hit
           k--; // Adjust index after removal
         }
-
         if (enemies[j].health <= 0) {
           enemies.splice(j, 1);
           score += 1;
@@ -288,13 +289,11 @@ function keyPressed(event) {
   activeKeys[key] = true;
 
   // Ignore Shift key or other modifier keys
-  if (key === 'Shift' || key === 'Control' || key === 'Alt') {
+  if (key == 'Shift' || key == 'Control' || key == 'Alt') {
     event.preventDefault();
     return;
   }
-
   const movementKeys = ['w', 's', 'd', 'a'];
-
   if (movementKeys.includes(key)) {
     const keyIndex = {'w': 0, 's': 1, 'd': 2, 'a': 3}[key];
     if (gameS) {
@@ -304,7 +303,7 @@ function keyPressed(event) {
     }
   }
 
-  if (key === 'j') {
+  if (key == 'j') {
     if (title) {
       title = false;
       pSelection = true;
@@ -326,9 +325,7 @@ function keyPressed(event) {
 function keyReleased(event) {
   // Remove the released key from activeKeys
   delete activeKeys[key];
-
   const movementKeys = ['w', 's', 'd', 'a'];
-
   if (movementKeys.includes(key)) {
     const keyIndex = {'w': 0, 's': 1, 'd': 2, 'a': 3}[key];
     if (gameS) {
@@ -337,8 +334,7 @@ function keyReleased(event) {
       c.keyz[keyIndex] = false;
     }
   }
-
-  if (key === 'j' && gameS) {
+  if (key == 'j' && gameS) {
     isShooting = false;
   }
 }
@@ -407,7 +403,7 @@ function playerSelectionScreen() {
     } else if (checkSelection(c.x, c.y, c.r, 80, 370, 400, 70)) {
         highlightedPlayerOption = "Default";
     }
-    if (highlightedPlayerOption !== previousHighlight) {
+    if (highlightedPlayerOption != previousHighlight) {
         confirmed = false;
     }
     // Draw options with dynamic highlighting
@@ -502,7 +498,6 @@ function handleSelection() {
       console.log("Moving to weapon selection.");
     }
   }else if (wSelection && highlightedWeaponOption) {
-    
     if (!confirmed) {
       selectedWeaponOption = highlightedWeaponOption;
       confirmed = true;
@@ -512,7 +507,6 @@ function handleSelection() {
       gameS = true;
       confirmed = false;
       console.log("Starting the game.");
-      
       if(selectedWeaponOption == "Sniper"){
         laserDamage = 100;
         laserFireRate = 2000;
