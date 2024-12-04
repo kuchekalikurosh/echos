@@ -27,7 +27,7 @@ var laserDamage;
 var laserFireRate; // Minimum delay between shots
 var canvasS = 750;
 let powerUps = []; 
-
+let activeKeys = {};
 function preload() {
     music1 = loadSound('main.mp4');
     shoot1 = loadSound('shoot1.mp3');
@@ -281,54 +281,67 @@ function checkLaserEnemyCollision(laser, enemy) {
   return laser.x > enemy.x && laser.x < enemy.x + enemy.L &&
          laser.y > enemy.y && laser.y < enemy.y + enemy.L;
 }
+function keyPressed(event) {
+  // Add the pressed key to activeKeys
+  activeKeys[key] = true;
 
-// Handle key presses for movement and interactions
-function keyPressed() {
-  // Update movement keys for game screen or cursor keys for selection screens
-  if (key == 'w' || key == 's' || key == 'd' || key == 'a') {
-    var keyIndex = {'w': 0, 's': 1, 'd': 2, 'a': 3}[key];
+  // Ignore Shift key or other modifier keys
+  if (key === 'Shift' || key === 'Control' || key === 'Alt') {
+    event.preventDefault();
+    return;
+  }
+
+  const movementKeys = ['w', 's', 'd', 'a'];
+
+  if (movementKeys.includes(key)) {
+    const keyIndex = {'w': 0, 's': 1, 'd': 2, 'a': 3}[key];
     if (gameS) {
       userPlayer.keyz[keyIndex] = true;
     } else if (pSelection || wSelection) {
       c.keyz[keyIndex] = true;
     }
   }
-  
-  // Handle the 'j' key for different game states
-  if (key == 'j') {
-        if (title) { // Transition from title to player selection
-            title = false;
-            pSelection = true;
-        } else if (gameOver) { // Reset the game from the game over screen
-          gameOver = false;
-          lScreen = true;
-        }else if (lScreen) {
-            resetGame();
-        } else if (gameS) { // Handle shooting in game screen
-            isShooting = true;
-        } else if (pSelection || wSelection) { // Handle selections in player or weapon selection screens
-            if ((pSelection && highlightedPlayerOption) || (wSelection && highlightedWeaponOption)) {
-                handleSelection();
-            }
-        }
+
+  if (key === 'j') {
+    if (title) {
+      title = false;
+      pSelection = true;
+    } else if (pSelection && highlightedPlayerOption) {
+      handleSelection();
+    } else if (wSelection && highlightedWeaponOption) {
+      handleSelection();
+    } else if (gameOver) {
+      gameOver = false;
+      lScreen = true;
+    } else if (lScreen) {
+      resetGame();
+    } else if (gameS) {
+      isShooting = true;
     }
+  }
 }
 
-function keyReleased() {
-  // Handle release of movement keys
-  if (key == 'w' || key == 's' || key == 'd' || key == 'a') {
-    var keyIndex = {'w': 0, 's': 1, 'd': 2, 'a': 3}[key];
+function keyReleased(event) {
+  // Remove the released key from activeKeys
+  delete activeKeys[key];
+
+  const movementKeys = ['w', 's', 'd', 'a'];
+
+  if (movementKeys.includes(key)) {
+    const keyIndex = {'w': 0, 's': 1, 'd': 2, 'a': 3}[key];
     if (gameS) {
       userPlayer.keyz[keyIndex] = false;
     } else if (pSelection || wSelection) {
       c.keyz[keyIndex] = false;
     }
   }
-  // Turn off shooting when 'j' is released in game screen
-  if (key == 'j' && gameS) {
+
+  if (key === 'j' && gameS) {
     isShooting = false;
   }
 }
+
+
 // Display game over screen
 function displayGameOverScreen() {
   textAlign(CENTER, CENTER);
@@ -504,11 +517,11 @@ function handleSelection() {
         userPlayer.ammo = 50;
       }else if (selectedWeaponOption){
         laserDamage = 25;
-        laserFireRate = 175;
+        laserFireRate = 200;
         userPlayer.ammo = 300;
       }else if(selectedWeaponOption == "Sub Machine Gun"){
         laserDamage = 12.5;
-        laserFireRate = 25;
+        laserFireRate = 12.5;
         userPlayer.ammo = 500;
       }
     }
