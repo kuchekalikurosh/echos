@@ -44,7 +44,7 @@ function setup() {
   for (var i = 0; i < amountOfE; i++) {
     enemies[i] = new Enemy(100, 1, 5, 25, color('red'));
   }
-  leaderboard = [1000, 900, 500, 200, 50];
+  leaderboard = [500, 400, 250, 100, 50];
 }
 
 function draw() {
