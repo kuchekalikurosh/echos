@@ -35,12 +35,16 @@ function preload() {
 
 function setup() {
   createCanvas(canvasS, canvasS); // Set canvas size
-  music1.loop(); // Start background music loop
+  if (music1.isLoaded()) {
+    music1.loop(); 
+  } else {
+    music1.onended(() => music1.loop());
+  }
   // Initialize enemies
   for (var i = 0; i < amountOfE; i++) {
     enemies[i] = new Enemy(100, 1, 5, 25, color('red'));
   }
-  leaderboard = [5, 4, 3, 2, 1];
+  leaderboard = [1000, 900, 500, 200, 50];
 }
 
 function draw() {
