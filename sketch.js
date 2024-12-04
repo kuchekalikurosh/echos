@@ -26,6 +26,8 @@ var confirmed = false; // Confirmation state for selections
 var laserDamage;
 var laserFireRate; // Minimum delay between shots
 var canvasS = 750;
+let powerUps = []; 
+
 function preload() {
     music1 = loadSound('main.mp4');
     shoot1 = loadSound('shoot1.mp3');
@@ -36,10 +38,9 @@ function setup() {
   music1.loop(); // Start background music loop
   // Initialize enemies
   for (var i = 0; i < amountOfE; i++) {
-    enemies[i] = new Enemy(100, 1, 5, 25);
+    enemies[i] = new Enemy(100, 1, 5, 25, color('red'));
   }
-
-  leaderboard = [100, 90, 80, 70, 60];
+  leaderboard = [5, 4, 3, 2, 1];
 }
 
 function draw() {
@@ -53,93 +54,153 @@ function draw() {
     weaponSelectionScreen();
   } else if (gameS) {
     gameScreen();
+  } else if (gameOver) {
+    displayGameOverScreen();
   } else if (lScreen) {
     displayLeaderboardScreen();
   }
 }
-
 function gameScreen() {
   background(0); // Set background color
   displayHealth(); // Display player health
   displayScore(score); // Display score
+  displayRound(rounds);
   userPlayer.move(userPlayer.keyz); // Move player based on key inputs
   userPlayer.show(); // Display player
-  checkCollisions(); // Check for collisions
-  if (gameOver) {
-    displayGameOverScreen(); // Show game over screen
-    return;
-  }
-
-  // Handle enemy and shooting logic
+  checkCollisions(); 
   if (enemies.length > 0) {
-    if (isShooting && millis() - lastShotTime>laserFireRate) {
+    if (isShooting && millis() - lastShotTime > laserFireRate) {
       shootLaser();
       lastShotTime = millis();
     }
-    for (var i = 0; i < enemies.length; i++){
+    for (let i = 0; i < enemies.length; i++) {
       if (enemies[i].moveable) {
         enemies[i].moveToPlayer(userPlayer, true);
       }
-      
       enemies[i].show();
       if (checkPlayerEnemyCollision(userPlayer, enemies[i]) && !invis) {
         console.log("Damage: " + enemies[i].attackDamage);
         userPlayer.health = Math.max(0, userPlayer.health - enemies[i].attackDamage);
         invis = true;
-        setTimeout(() => invis = false, 2000);
+        setTimeout(() => (invis = false), 2000);
       }
       if (userPlayer.health <= 0) {
+        gameS = false;
         gameOver = true;
       }
-      // Handle laser collisions and score update
-      if (lasers.length > 0) {
-        laserHandler();
-      }
+    }
+    // Handle laser collisions and score update
+    if (lasers.length > 0) {
+      laserHandler();
     }
   }
-  // Spawn more enemies if all are defeated
-  if (enemies.length == 0) {
-    amountOfE += 5;
+  // Display and handle power-ups
+  for (let i = powerUps.length - 1; i >= 0; i--) {
+    powerUps[i].show();
+    if (dist(userPlayer.x, userPlayer.y, powerUps[i].x, powerUps[i].y) < userPlayer.r / 2 + powerUps[i].size / 2) {
+      console.log("Power-up collected:", powerUps[i].type);
+      powerUps[i].applyEffect(userPlayer); // Apply effect to the player
+      powerUps.splice(i, 1); // Remove power-up
+    }
+  }
+  // Spawn new enemies if all enemies are defeated
+  if (enemies.length === 0) {
+    let baseEnemies = 5; // Base number of enemies
+    let growthFactor = 1.25; // Exponential growth factor
+    let maxEnemiesPerRound = 100; // Cap on the maximum number of enemies per round
+    amountOfE = Math.min(
+      maxEnemiesPerRound,
+      Math.ceil(baseEnemies * Math.pow(growthFactor, rounds - 1))
+    );
     rounds += 1;
-    if (rounds % 5 == 0) {
-      boss = new Enemy(1000, userPlayer.speed - 0.5, 20, 50);
+    for (let t = 0; t < amountOfE; t++) {
+      let enemyColor = color("red");
+      if (rounds > 10) enemyColor = color("orange");
+      if (rounds > 20) enemyColor = color("yellow");
+
+      enemies.push(
+        new Enemy(
+          100 + rounds * 10,
+          1 + rounds * 0.1,
+          5 + rounds,
+          25,
+          enemyColor
+        )
+      );
     }
-    for (var t = 0; t < amountOfE; t++) {
-      enemies[t] = new Enemy(100, 1 , 5, 25);
+    if (rounds % 5 === 0) {
+      enemies.push(
+        new Enemy(
+          1000 + rounds * 50,
+          1.25 + rounds * 0.2,
+          25,
+          50,
+          color("violet")
+        )
+      );
+      console.log("Boss spawned!");
     }
+    spawnPowerUps();
+  }
+}
+function spawnPowerUps() {
+  let types = ["speed", "ammo", "health", "damage"];
+  let powerUpCount = 2; // Always spawn 2 power-ups per round
+
+  // Ensure the total number of power-ups does not exceed 7
+  while (powerUps.length < 7 && powerUpCount > 0) {
+    let type;
+    if (Math.random() < 0.6) {
+      type = "ammo"; // 60% chance for ammo
+    } else if (Math.random() < 0.8) {
+      type = "damage"; // 20% chance for damage
+    } else {
+      type = random(["speed", "health"]); // 20% split between speed and health
+    }
+
+    let x = random(50, canvasS - 50); // Random position
+    let y = random(50, canvasS - 50);
+
+    powerUps.push(new PowerUp(type, x, y));
+    powerUpCount--;
   }
 }
 
-function laserHandler(){
-  for (var k = 0; k < lasers.length; k++) {
-      lasers[k].show();
-      lasers[k].move();
-      for (let j = 0; j < enemies.length; j++) {
-        if (checkLaserEnemyCollision(lasers[k], enemies[j])) {
-          console.log("Laser hit enemy!");
-          enemies[j].health -= lasers[k].damage;
-        if(selectedWeaponOption != "Sniper"){
-          lasers.splice(k, 1);
-        }  // Remove laser on hit
+
+function laserHandler() {
+  for (let k = 0; k < lasers.length; k++) {
+    lasers[k].show();
+    lasers[k].move();
+    for (let j = 0; j < enemies.length; j++) {
+      if (checkLaserEnemyCollision(lasers[k], enemies[j])) {
+        enemies[j].health -= lasers[k].damage;
+
+        if (selectedWeaponOption !== "Sniper") {
+          lasers.splice(k, 1); // Remove laser on hit
+          k--; // Adjust index after removal
+        }
+
         if (enemies[j].health <= 0) {
-          enemies.splice(j, 1); // Remove enemy on death
+          enemies.splice(j, 1);
           score += 1;
         }
-        k--; // Adjust index after removal
         break;
       }
     }
+
     bulletOutofBounds(lasers);
   }
 }
 
-function bulletOutofBounds(l){
-  for (var i; i< l.length; i++){
-    if(l[i].x < 0 || l[i].x > canvasS || l[i].y < 0 || l[i].y > canvasS){
-       l.splice(i, 1);
+
+function bulletOutofBounds(lasers) {
+  for (let i = lasers.length - 1; i >= 0; i--) {
+    if ( lasers[i].x < 0 || lasers[i].x > canvasS || lasers[i].y < 0 || lasers[i].y > canvasS) {
+      lasers.splice(i, 1); // Remove laser
     }
   }
 }
+
 
 function setPlayerOptions(){
   if(selectedPlayerOption == "Juggernaut"){
@@ -152,18 +213,23 @@ function setPlayerOptions(){
 }
 
 function shootLaser() {
-  // Calculate closest enemy and shoot a laser
-  var s = dist(userPlayer.x, userPlayer.y, enemies[0].x, enemies[0].y);
-  var p = 0;
-  for (var i = 1; i < enemies.length; i++) {
-    var temp = dist(userPlayer.x, userPlayer.y, enemies[i].x, enemies[i].y);
-    if (temp < s) {
-      s = temp;
-      p = i;
+  if (userPlayer.ammo <= 0) {
+    console.log("Out of ammo!"); // Debug message
+    return; 
+  }
+  let closestEnemyIndex = 0;
+  let shortestDistance = dist(userPlayer.x, userPlayer.y, enemies[0].x, enemies[0].y);
+  for (let i = 1; i < enemies.length; i++) {
+    let currentDistance = dist(userPlayer.x, userPlayer.y, enemies[i].x, enemies[i].y);
+    if (currentDistance < shortestDistance) {
+      shortestDistance = currentDistance;
+      closestEnemyIndex = i;
     }
   }
-  let l = new laser(15, laserDamage, userPlayer.x, userPlayer.y, enemies[p].x + enemies[p].L / 2, enemies[p].y + enemies[p].L / 2);
+  let targetEnemy = enemies[closestEnemyIndex];
+  let l = new laser(15, laserDamage, userPlayer.x, userPlayer.y, targetEnemy.x + targetEnemy.L / 2, targetEnemy.y + targetEnemy.L / 2);
   lasers.push(l);
+  userPlayer.ammo--; // Deduct ammo
   shoot1.play();
 }
 
@@ -219,7 +285,7 @@ function checkLaserEnemyCollision(laser, enemy) {
 // Handle key presses for movement and interactions
 function keyPressed() {
   // Update movement keys for game screen or cursor keys for selection screens
-  if (key === 'w' || key === 's' || key === 'd' || key === 'a') {
+  if (key == 'w' || key == 's' || key == 'd' || key == 'a') {
     var keyIndex = {'w': 0, 's': 1, 'd': 2, 'a': 3}[key];
     if (gameS) {
       userPlayer.keyz[keyIndex] = true;
@@ -229,12 +295,12 @@ function keyPressed() {
   }
   
   // Handle the 'j' key for different game states
-  if (key === 'j') {
+  if (key == 'j') {
         if (title) { // Transition from title to player selection
             title = false;
             pSelection = true;
         } else if (gameOver) { // Reset the game from the game over screen
-            gameOver = false;
+          gameOver = false;
           lScreen = true;
         }else if (lScreen) {
             resetGame();
@@ -250,7 +316,7 @@ function keyPressed() {
 
 function keyReleased() {
   // Handle release of movement keys
-  if (key === 'w' || key === 's' || key === 'd' || key === 'a') {
+  if (key == 'w' || key == 's' || key == 'd' || key == 'a') {
     var keyIndex = {'w': 0, 's': 1, 'd': 2, 'a': 3}[key];
     if (gameS) {
       userPlayer.keyz[keyIndex] = false;
@@ -259,7 +325,7 @@ function keyReleased() {
     }
   }
   // Turn off shooting when 'j' is released in game screen
-  if (key === 'j' && gameS) {
+  if (key == 'j' && gameS) {
     isShooting = false;
   }
 }
@@ -271,23 +337,33 @@ function displayGameOverScreen() {
   text("Game Over", width / 2, height / 2);
   textSize(20);
   fill(255);
-  text("Press J to Restart", width / 2, height / 2 + 60);
+  text("Press J to see leaderboard", width / 2, height / 2 + 60);
 }
 
 // Display player health
 function displayHealth() {
-  noStroke();
-  fill(255); // White text color
-  textSize(32);
+  textAlign(LEFT); // Reset text alignment
+  textSize(32);    // Reset text size
+  noStroke();      // Avoid outlines
+  fill(255);       // White text
   text("Health: " + userPlayer.health, 50, 50);
 }
 // Display score
-function displayScore(currentS) {
-  noStroke();
-  text("Score: " + currentS, 50, 125);
-  textSize(32);
+function displayScore(score) {
+  textAlign(LEFT); // Reset text alignment
+  textSize(32);    // Reset text size
+  noStroke();      // Avoid outlines
+  fill(255);       // White text
+  text("Score: " + score, 50, 125);
 }
-
+function displayRound(currentRound) {
+  textAlign(LEFT); // Reset text alignment
+  textSize(16);    // Reset text size
+  noStroke();      // Avoid outlines
+  fill(255);       // White text
+  text("Round: " + currentRound, 50, 163);
+  text("Ammo: " + userPlayer.ammo, 50, 200); // Display round and ammo below score and health
+}
 // Title screen function
 function titleScreen() {
   background(0); // Black background
@@ -360,7 +436,7 @@ function weaponSelectionScreen() {
 function drawOption(x, y, title, description, isHighlighted, isSelected){
   if (isHighlighted) fill(100, 200, 100); // Highlight color
     else fill(255); // Default color
-
+    noStroke();
     rect(x - 20, y - 30, 400, 70); // Draw rectangle for the option
     fill(0); // Text color
     text(title, x, y); // Draw the title
@@ -425,27 +501,28 @@ function handleSelection() {
       if(selectedWeaponOption == "Sniper"){
         laserDamage = 100;
         laserFireRate = 2000;
+        userPlayer.ammo = 50;
       }else if (selectedWeaponOption){
         laserDamage = 25;
-        laserFireRate = 125;
+        laserFireRate = 175;
+        userPlayer.ammo = 300;
       }else if(selectedWeaponOption == "Sub Machine Gun"){
         laserDamage = 12.5;
-        laserFireRate = 50;
+        laserFireRate = 25;
+        userPlayer.ammo = 500;
       }
     }
   }
 }
 
 function resetGame() {
-  userPlayer.health = 100;
-  userPlayer.x = 250;
-  userPlayer.y = 250;
   enemies = [];
   amountOfE = 5;
   for(let i = 0; i < amountOfE; i++) {
-    enemies[i] = new Enemy(100, 1, 5, 25);
+    enemies[i] = new Enemy(100, 1, 5, 25, color('red'));
   }
   score = 0;
+  rounds = 0;
   lScreen = false;
   gameOver = false;
   gameS = false;
@@ -453,27 +530,55 @@ function resetGame() {
   selectedWeaponOption = " ";
   selectedPlayerOption = " ";
 }
-
 function displayLeaderboardScreen() {
   background(0);
   fill(255);
-  leaderboard.push(score);
-  leaderboard.sort((a, b) => a - b);
-  if (leaderboard.length > 5) {
-    leaderboard.pop();
-  }
-  for (var i = 0; i < leaderboard.length; i++) {
-    if (score == leaderboard[i]) {
-      textSize(18);
-      textAlign(CENTER, CENTER);
-      text("NEW HIGH SCORE!", width / 2, 100);
-      text("SCORE: " + score, width / 2, 175);
-    }
-  }
-  textSize(30);
+  textSize(32);
   textAlign(CENTER, CENTER);
-    for (var i = 0; i < leaderboard.length; i++) {
-        text(`${i + 1}. ${leaderboard[i]}`, width / 2, 150 + i * 50);
+  leaderboard.push(score);
+  leaderboard = [...new Set(leaderboard)].sort((a, b) => b - a); // Remove duplicates and sort
+  if (leaderboard.length > 5) leaderboard.pop(); // Keep top 5 scores
+
+  text("LEADERBOARD", width / 2, 50); // Title
+  textSize(24);
+
+  for (var i = 0; i < leaderboard.length; i++) {
+    if (score === leaderboard[i]) {
+      fill(255, 255, 0); // Highlight the player's score
+      text(`${i + 1}. ${leaderboard[i]} (You)`, width / 2, 150 + i * 50);
+    } else {
+      fill(255); // Default color for other scores
+      text(`${i + 1}. ${leaderboard[i]}`, width / 2, 150 + i * 50);
     }
-  text("Press 'J' to return to title screen", width / 2, 550);
+  }
+
+  fill(255); 
+  textSize(20);
+  text("Press 'J' to return to title screen", width / 2, height - 50);
 }
+
+// Fix the cyan text issue by ensuring proper styling before rendering text
+function displayGameOverScreen() {
+  noStroke(); // Avoid text outlines
+  textAlign(CENTER, CENTER);
+  textSize(50);
+  fill(255, 0, 0); // Red text
+  text("Game Over", width / 2, height / 2);
+  
+  textSize(20);
+  fill(255); // White text
+  text("Press J to see leaderboard", width / 2, height / 2 + 60);
+}
+
+// Fix the cyan text issue by ensuring proper styling before rendering text
+function displayGameOverScreen() {
+  noStroke(); // Avoid text outlines
+  textAlign(CENTER, CENTER);
+  textSize(50);
+  fill(255, 0, 0); // Red text
+  text("Game Over", width / 2, height / 2);
+  
+  textSize(20);
+  fill(255); // White text
+  text("Press J to see leaderboard", width / 2, height / 2 + 60);
+} 

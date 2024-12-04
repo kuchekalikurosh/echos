@@ -1,37 +1,28 @@
-class Enemy{
-  constructor(enemyHealth, enemySpeed, 
-        enemyAttackDamage, size) {
-    console.log(enemyHealth, enemySpeed, enemyAttackDamage);
-            this.health = enemyHealth;
-            this.speed = enemySpeed;
-            this.attackDamage = enemyAttackDamage;
-            this.x = random(0, 1000);
-            this.y = random(0, 1000);
-            this.L = size;
-            this.moveable = true;
+class Enemy {
+  constructor(enemyHealth, enemySpeed, enemyAttackDamage, size, clr, isBoss = false) {
+    this.health = enemyHealth;
+    this.speed = enemySpeed;
+    this.attackDamage = enemyAttackDamage;
+    this.x = random(0, canvasS);
+    this.y = random(0, canvasS);
+    this.L = size; // Size of the enemy
+    this.moveable = true;
+    this.clr =clr; //color
+    this.isBoss = isBoss; // Boss flag
+  }
+
+  moveToPlayer(player, moveable) {
+    if (this.moveable) {
+      if (player.y < this.y) this.y -= this.speed;
+      if (player.y > this.y) this.y += this.speed;
+      if (player.x > this.x) this.x += this.speed;
+      if (player.x < this.x) this.x -= this.speed;
     }
-    moveToPlayer(Player, moveable){
-      if(this.x + this.L >= Player.x && this.x <= Player.r + Player.x && this.y + this.L >= Player.y && this.y <= Player.r + Player.x){
-        this.movable = false;
-      }
-      if(this.moveable == true) {
-        if(Player.y < this.y) {
-            this.y -= this.speed;
-        }
-        if(Player.y > this.y) {
-            this.y += this.speed;
-        }
-        if(Player.x > this.x) {
-            this.x += this.speed;
-        }
-        if(Player.x < this.x ) {
-            this.x -= this.speed;
-        }
-      }
-    }
-    show(){
-      noStroke()
-      fill('red')
-      rect(this.x,this.y,this.L, this.L);
-    }
+  }
+
+  show() {
+    noStroke();
+    fill(this.clr);
+    rect(this.x, this.y, this.L, this.L); // Bosses and regular enemies use the same rendering for now
+  }
 }
