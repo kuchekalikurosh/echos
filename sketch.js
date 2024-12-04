@@ -154,12 +154,14 @@ function spawnPowerUps() {
   // Ensure the total number of power-ups does not exceed 7
   while (powerUps.length < 7 && powerUpCount > 0) {
     let type;
-    if (Math.random() < 0.6) {
-      type = "ammo"; // 60% chance for ammo
-    } else if (Math.random() < 0.8) {
-      type = "damage"; // 20% chance for damage
+    if (randomValue < 0.4) {
+      type = "ammo"; 
+    } else if (randomValue < 0.6) {
+      type = "damage"; 
+    } else if(randomValue < 0.9){
+      type =  "health";
     } else {
-      type = random(["speed", "health"]); // 20% split between speed and health
+      type = "speed";
     }
 
     let x = random(50, canvasS - 50); // Random position
@@ -169,8 +171,6 @@ function spawnPowerUps() {
     powerUpCount--;
   }
 }
-
-
 function laserHandler() {
   for (let k = 0; k < lasers.length; k++) {
     lasers[k].show();
@@ -196,7 +196,6 @@ function laserHandler() {
   }
 }
 
-
 function bulletOutofBounds(lasers) {
   for (let i = lasers.length - 1; i >= 0; i--) {
     if ( lasers[i].x < 0 || lasers[i].x > canvasS || lasers[i].y < 0 || lasers[i].y > canvasS) {
@@ -204,7 +203,6 @@ function bulletOutofBounds(lasers) {
     }
   }
 }
-
 
 function setPlayerOptions(){
   if(selectedPlayerOption == "Juggernaut"){
