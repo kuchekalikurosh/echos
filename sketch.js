@@ -28,9 +28,12 @@ var laserFireRate; // Minimum delay between shots
 var canvasS = 750;
 let powerUps = []; 
 let activeKeys = {};
+let stars = [];
+let retroF;
 function preload() {
     music1 = loadSound('main.mp4');
     shoot1 = loadSound('shoot1.mp3');
+    retroF = loadFont('nintendo-nes-font.ttf');
 }
 
 function setup() {
@@ -44,6 +47,9 @@ function setup() {
     enemies[i] = new Enemy(100, 1, 5, 25, color('red'));
   }
   leaderboard = [500, 250, 100, 50, 25];
+  for (let i = 0; i < 100; i++) {
+    stars.push({ x: random(width), y: random(height), speed: random(1, 3)});
+  }
 }
 
 function draw() {
@@ -71,6 +77,19 @@ function gameScreen() {
   userPlayer.move(userPlayer.keyz); // Move player based on key inputs
   userPlayer.show(); // Display player
   checkCollisions(); 
+
+  // Parallax background
+  for (let star of stars) {
+    fill(225);
+    noStroke();
+    ellipse(star.x, star.y, 2, 2);
+    star.y += star.speed;
+    if (star.y > height) {
+      star.y = 0;
+      star.x = random(width);
+    }
+  }
+
   if (enemies.length > 0) {
     if (isShooting && millis() - lastShotTime > laserFireRate) {
       shootLaser();
@@ -376,16 +395,53 @@ function displayRound(currentRound) {
   text("Ammo: " + userPlayer.ammo, 50, 200); // Display round and ammo below score and health
 }
 // Title screen function
+
+let titleGlow = 0;
+let glowDir = 1;
+
 function titleScreen() {
   background(0); // Black background
-  fill(255); // White text
+
+  // Parallax background
+  for (let star of stars) {
+    fill(225);
+    noStroke();
+    ellipse(star.x, star.y, 2, 2);
+    star.y += star.speed;
+    if (star.y > height) {
+      star.y = 0;
+      star.x = random(width);
+    }
+  }
+
+  textFont(retroF);
+  fill(255, 200 + titleGlow);
   textAlign(CENTER, CENTER);
-  textSize(50);
-  text("Echoes of Extinction", width / 2, height / 2);
-  fill(255); // White text
+  textSize(52);
+
+  let gradient = 10;
+  for (let i = gradient; i > 0; i--) {
+    let colorBrightness = map(i, 0, gradient, 0, 255);
+    fill(0, 0, 255, colorBrightness * (0.5 + titleGlow / 255));
+    text("GEOMETRY WARS", width / 2, height / 2);
+  }
+
+  fill(255, 255 - titleGlow, 255);
+  text("GEOMETRY WARS", width / 2, height / 2);
+
+  titleGlow += glowDir * 5;
+  if (titleGlow > 255 || titleGlow < 0) {
+    glowDir *= -1;
+  }
+
+  fill(0, 200, 255); // more blush
   textAlign(CENTER, CENTER);
-  textSize(25);
-  text("Press J to Start", width / 2, height / 2 + 50);
+  textSize(24);
+
+  if (frameCount % 60 < 30) {
+    text("Press J to Start", width / 2, height / 2 + 50);
+  }
+  
 }
 // Player Selection Screen
 function playerSelectionScreen() {
@@ -407,9 +463,9 @@ function playerSelectionScreen() {
         confirmed = false;
     }
     // Draw options with dynamic highlighting
-    drawOption(100, 200, "Juggernaut", "3x health, 2.5x slower", highlightedPlayerOption == "Juggernaut");
-    drawOption(100, 300, "Speedster", "2x speed, 80% health", highlightedPlayerOption == "Speedster");
-    drawOption(100, 400, "Default", "Default speed and health", highlightedPlayerOption == "Default");
+    drawOption(100, 200, "Juggernaut", "more health, slower", highlightedPlayerOption == "Juggernaut");
+    drawOption(100, 300, "Speedster", "low health, faster", highlightedPlayerOption == "Speedster");
+    drawOption(100, 400, "Default", "standard", highlightedPlayerOption == "Default");
 
     c.show(); // Display the cursor
     c.move(c.keyz); // Update cursor position based on input
