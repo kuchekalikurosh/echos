@@ -30,8 +30,9 @@ let powerUps = [];
 let activeKeys = {};
 let stars = [];
 let retroF;
+
 function preload() {
-    music1 = loadSound('main.mp4');
+    music1 = loadSound('main.mp3');
     shoot1 = loadSound('shoot1.mp3');
     retroF = loadFont('nintendo-nes-font.ttf');
 }
@@ -149,6 +150,9 @@ function gameScreen() {
           enemyColor
         )
       );
+    }
+    if (rounds % 3 == 0) {
+      enemies.push(new Enemy(500 + rounds * 50, 2 + rounds * 0.5, 10, 35, color('blue')));
     }
     if (rounds % 5 == 0) {
       enemies.push(new Enemy(1000 + rounds * 50, 1.25 + rounds * 0.2,25,50,color("violet")));
@@ -364,10 +368,10 @@ function displayGameOverScreen() {
   textAlign(CENTER, CENTER);
   textSize(50);
   fill(255, 0, 0);
-  text("Game Over", width / 2, height / 2);
+  text("GAME OVER", width / 2, height / 2);
   textSize(20);
   fill(255);
-  text("Press J to see leaderboard", width / 2, height / 2 + 60);
+  text("PRESS J TO CONTINUE", width / 2, height / 2 + 60);
 }
 
 // Display player health
@@ -376,7 +380,7 @@ function displayHealth() {
   textSize(32);    // Reset text size
   noStroke();      // Avoid outlines
   fill(255);       // White text
-  text("Health: " + userPlayer.health, 50, 50);
+  text("HP: " + userPlayer.health, 50, 50);
 }
 // Display score
 function displayScore(score) {
@@ -384,18 +388,18 @@ function displayScore(score) {
   textSize(32);    // Reset text size
   noStroke();      // Avoid outlines
   fill(255);       // White text
-  text("Score: " + score, 50, 125);
+  text("SCORE: " + score, 50, 125);
 }
 function displayRound(currentRound) {
   textAlign(LEFT); // Reset text alignment
   textSize(16);    // Reset text size
   noStroke();      // Avoid outlines
   fill(255);       // White text
-  text("Round: " + currentRound, 50, 163);
-  text("Ammo: " + userPlayer.ammo, 50, 200); // Display round and ammo below score and health
+  text("ROUND: " + currentRound, 50, 163);
+  text("AMMO: " + userPlayer.ammo, 50, 200); // Display round and ammo below score and health
 }
-// Title screen function
 
+// Title screen function
 let titleGlow = 0;
 let glowDir = 1;
 
@@ -439,7 +443,7 @@ function titleScreen() {
   textSize(24);
 
   if (frameCount % 60 < 30) {
-    text("Press J to Start", width / 2, height / 2 + 50);
+    text("PRESS J", width / 2, height / 2 + 50);
   }
   
 }
@@ -463,9 +467,9 @@ function playerSelectionScreen() {
         confirmed = false;
     }
     // Draw options with dynamic highlighting
-    drawOption(100, 200, "Juggernaut", "more health, slower", highlightedPlayerOption == "Juggernaut");
-    drawOption(100, 300, "Speedster", "low health, faster", highlightedPlayerOption == "Speedster");
-    drawOption(100, 400, "Default", "standard", highlightedPlayerOption == "Default");
+    drawOption(100, 200, "RX-00-1", "DREADNAUGHT", highlightedPlayerOption == "Juggernaut");
+    drawOption(100, 300, "RX-00-2", "WAVERIDER", highlightedPlayerOption == "Speedster");
+    drawOption(100, 400, "RX-00", "CHARTREUSE", highlightedPlayerOption == "Default");
 
     c.show(); // Display the cursor
     c.move(c.keyz); // Update cursor position based on input
@@ -492,9 +496,9 @@ function weaponSelectionScreen() {
         confirmed = false;
     }
     // Draw options with dynamic highlighting
-    drawOption(100, 200, "Sniper", "High damage, slow fire rate", highlightedWeaponOption == "Sniper");
-    drawOption(100, 300, "Assault Rifle", "Default stats", highlightedWeaponOption == "Assault Rifle");
-    drawOption(100, 400, "Sub Machine Gun", "Low damage, fast fire rate", highlightedWeaponOption == "Sub Machine Gun");
+    drawOption(100, 200, "OCTAL", "HIGH DMG", highlightedWeaponOption == "Sniper");
+    drawOption(100, 300, "HEXBOLT", "STD DMG", highlightedWeaponOption == "Assault Rifle");
+    drawOption(100, 400, "ECLIPSER", "LOW DMG", highlightedWeaponOption == "Sub Machine Gun");
 
     c.show(); // Display the cursor
     c.move(c.keyz); // Update cursor position based on input
@@ -619,7 +623,7 @@ function displayLeaderboardScreen() {
 
   fill(255); 
   textSize(20);
-  text("Press 'J' to return to title screen", width / 2, height - 50);
+  text("PRESS J TO CONTINUE", width / 2, height - 50);
 }
 
 // Fix the cyan text issue by ensuring proper styling before rendering text
@@ -628,11 +632,11 @@ function displayGameOverScreen() {
   textAlign(CENTER, CENTER);
   textSize(50);
   fill(255, 0, 0); // Red text
-  text("Game Over", width / 2, height / 2);
+  text("GAME OVER", width / 2, height / 2);
   
   textSize(20);
   fill(255); // White text
-  text("Press J to see leaderboard", width / 2, height / 2 + 60);
+  text("PRESS J TO CONTINUE", width / 2, height / 2 + 60);
 }
 
 // Fix the cyan text issue by ensuring proper styling before rendering text
@@ -641,9 +645,9 @@ function displayGameOverScreen() {
   textAlign(CENTER, CENTER);
   textSize(50);
   fill(255, 0, 0); // Red text
-  text("Game Over", width / 2, height / 2);
+  text("GAME OVER", width / 2, height / 2);
   
   textSize(20);
   fill(255); // White text
-  text("Press J to see leaderboard", width / 2, height / 2 + 60);
+  text("PRESS J TO CONTINUE", width / 2, height / 2 + 60);
 } 
